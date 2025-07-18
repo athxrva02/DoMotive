@@ -11,68 +11,208 @@ import CoreData
 
 struct HomeView: View {
     @Environment(\.managedObjectContext) private var viewContext
+
+    // Fetch today’s mood (if any)
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \MoodEntry.date, ascending: false)],
+        predicate: NSPredicate(format: "date >= %@", Calendar.current.startOfDay(for: Date()) as NSDate),
+        animation: .default
+    ) private var todayMood: FetchedResults<MoodEntry>
+
+    // Fetch tasks
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Task.dueDate, ascending: true)],
         predicate: NSPredicate(format: "isCompleted == NO"),
         animation: .default
-    ) private var upcomingTasks: FetchedResults<Task>
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \MoodEntry.date, ascending: false)],
-        animation: .default
-    ) private var moodEntries: FetchedResults<MoodEntry>
+    ) private var tasks: FetchedResults<Task>
+
+    // Local state for quick mood entry
+    @State private var showMoodSheet = false
 
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 24) {
-                // App Title
-                Text("DoMotive")
-                    .font(.largeTitle).bold()
-                    .padding(.top)
-                
-                // Current Mood
-                VStack(alignment: .leading) {
-                    Text("Today's Mood").font(.headline)
-                    if let mood = moodEntries.first {
-                        HStack {
-                            Text("Value: \(mood.moodValue)")
-                            if let tags = mood.tags { Text("(\(tags))").font(.caption) }
-                        }
-                    } else {
-                        Text("No mood entry yet.").font(.subheadline).foregroundColor(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    // --- App Greeting ---
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("DoMotive")
+                            .font(.largeTitle).bold()
+                        Text(Date(), style: .date)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
+                    .padding(.top, 4)
+
+                    // --- Mood Log Section ---
+                    moodSection
+
+                    // --- Quick Actions ---
+                    quickActions
+
+                    // --- Suggested Tasks For Mood ---
+                    suggestedTasksSection
+
+                    Spacer()
                 }
-                
-                // Task Suggestions (First 3 Incomplete)
-                VStack(alignment: .leading) {
-                    Text("Today's Tasks")
-                        .font(.headline)
-                    if upcomingTasks.isEmpty {
-                        Text("No tasks scheduled for today!").foregroundColor(.secondary)
-                    } else {
-                        ForEach(upcomingTasks.prefix(3)) { task in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(task.title ?? "").font(.body)
-                                    if let due = task.dueDate {
-                                        Text(due.formatted(date: .abbreviated, time: .shortened))
-                                            .font(.caption).foregroundColor(.secondary)
-                                    }
-                                    if let mood = task.moodTag {
-                                        Text("Mood: \(mood)").font(.caption2)
-                                    }
-                                }
-                                Spacer()
-                                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(task.isCompleted ? .green : .gray)
-                            }.padding(.vertical, 4)
-                        }
-                    }
-                }
-                
-                Spacer()
+                .padding(.horizontal)
+                .padding(.top, 12)
             }
-            .padding()
-            .navigationBarTitle("Home", displayMode: .inline)
+            .navigationBarHidden(true)
         }
     }
+}
+
+// MARK: - Mood Section
+private extension HomeView {
+    var moodSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("How do you feel today?")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    showMoodSheet = true
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.title3)
+                        .foregroundColor(.accentColor)
+                }
+                .accessibilityLabel("Add Mood Entry")
+            }
+
+            if let mood = todayMood.first {
+                VStack(alignment: .leading, spacing: 2) {
+                    // Mood Value as color/slider/emoji
+                    HStack {
+                        Text("Mood: \(mood.moodValue)")
+                        MoodEmojiView(value: mood.moodValue)
+                    }
+                    // Tag chips
+                    HStack {
+                        ForEach(parseTags(mood.tags), id: \.self) { t in
+                            Text(t)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(Color(.systemBlue).opacity(0.15)))
+                                .font(.caption)
+                        }
+                    }
+                }
+            } else {
+                Text("Tap '+' to log your mood").foregroundColor(.secondary)
+            }
+        }
+        .sheet(isPresented: $showMoodSheet) {
+            AddMoodView()
+                .environment(\.managedObjectContext, viewContext)
+        }
+    }
+}
+
+// MARK: - Quick Actions
+private extension HomeView {
+    var quickActions: some View {
+        HStack(spacing: 18) {
+            NavigationLink(destination: AddTaskView()) {
+                actionButton(icon: "plus.circle", label: "Add Task", color: .accentColor)
+            }
+            NavigationLink(destination: AddJournalView()) {
+                actionButton(icon: "pencil.and.outline", label: "Journal", color: .purple)
+            }
+            NavigationLink(destination: PlanDayView()) {
+                actionButton(icon: "calendar", label: "Plan Day", color: .green)
+            }
+        }
+    }
+
+    func actionButton(icon: String, label: String, color: Color) -> some View {
+        VStack {
+            Image(systemName: icon)
+                .font(.title)
+                .foregroundColor(.white)
+                .padding()
+                .background(Circle().fill(color))
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.primary)
+        }
+        .frame(width: 90)
+        .padding(.vertical, 7)
+    }
+}
+
+// MARK: - Suggested Tasks Section
+private extension HomeView {
+    var suggestedTasksSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Suggested for your mood")
+                .font(.headline)
+            if let todayMood = todayMood.first, let moodTag = todayMood.tags?.components(separatedBy: ",").first {
+                let matchTasks = tasks.filter {
+                    $0.moodTag?.localizedCaseInsensitiveContains(moodTag.trimmingCharacters(in: .whitespaces)) ?? false
+                }
+                if matchTasks.isEmpty {
+                    Text("No tasks matched your mood. Enjoy your day!")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(matchTasks.prefix(3)) { task in
+                        HomeTaskCard(task: task)
+                    }
+                }
+            } else {
+                ForEach(tasks.prefix(3)) { task in
+                    HomeTaskCard(task: task)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Helper Components
+
+struct MoodEmojiView: View {
+    var value: Int16
+    var body: some View {
+        Text(self.emoji(for: value))
+    }
+    func emoji(for value: Int16) -> String {
+        switch value {
+        case 8...10: return "😃"
+        case 5...7: return "🙂"
+        case 3...4: return "😐"
+        case 1...2: return "😔"
+        default: return "❓"
+        }
+    }
+}
+
+struct HomeTaskCard: View {
+    @ObservedObject var task: Task
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(task.title ?? "Untitled")
+                    .font(.subheadline).bold()
+                    .foregroundColor(.primary)
+                if let due = task.dueDate {
+                    Text(due, style: .time)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                if let mood = task.moodTag, !mood.isEmpty {
+                    Text("Mood: \(mood.capitalized)").font(.caption2).foregroundColor(.blue)
+                }
+            }
+            Spacer()
+            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(task.isCompleted ? .green : .gray)
+        }
+        .padding()
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
+        .shadow(color: .black.opacity(0.03), radius: 3, x: 0, y: 1)
+    }
+}
+
+func parseTags(_ str: String?) -> [String] {
+    str?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? []
 }
