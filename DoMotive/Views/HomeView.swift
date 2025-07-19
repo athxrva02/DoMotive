@@ -264,9 +264,9 @@ private extension HomeView {
                                 Text(tag)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 4)
-                                    .background(Capsule().fill(Color(.systemBlue).opacity(0.15)))
+                                    .background(Capsule().fill(themeManager.primaryColor.opacity(0.15)))
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(themeManager.primaryColor)
                             }
                         }
                     }
@@ -287,13 +287,13 @@ private extension HomeView {
     var quickActions: some View {
         HStack(spacing: 18) {
             NavigationLink(destination: AddTaskView()) {
-                actionButton(icon: "plus.circle", label: "Add Task", color: .accentColor)
+                actionButton(icon: "plus.circle", label: "Add Task", color: themeManager.accentColor)
             }
             NavigationLink(destination: AddJournalView()) {
-                actionButton(icon: "pencil.and.outline", label: "Journal", color: .purple)
+                actionButton(icon: "pencil.and.outline", label: "Journal", color: themeManager.secondaryColor)
             }
             NavigationLink(destination: PlanDayView()) {
-                actionButton(icon: "calendar", label: "Plan Day", color: .green)
+                actionButton(icon: "calendar", label: "Plan Day", color: themeManager.successColor)
             }
         }
     }
@@ -330,11 +330,13 @@ private extension HomeView {
                 } else {
                     ForEach(matchTasks.prefix(3)) { task in
                         HomeTaskCard(task: task)
+                            .environmentObject(themeManager)
                     }
                 }
             } else {
                 ForEach(tasks.prefix(3)) { task in
                     HomeTaskCard(task: task)
+                        .environmentObject(themeManager)
                 }
             }
         }
@@ -354,6 +356,7 @@ struct MoodEmojiView: View {
 }
 
 struct HomeTaskCard: View {
+    @EnvironmentObject var themeManager: ColorThemeManager
     @ObservedObject var task: Task
     var body: some View {
         HStack {
@@ -367,12 +370,12 @@ struct HomeTaskCard: View {
                         .foregroundColor(.secondary)
                 }
                 if let mood = task.moodTag, !mood.isEmpty {
-                    Text("Mood: \(mood.capitalized)").font(.caption2).foregroundColor(.blue)
+                    Text("Mood: \(mood.capitalized)").font(.caption2).foregroundColor(themeManager.primaryColor)
                 }
             }
             Spacer()
             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(task.isCompleted ? .green : .gray)
+                .foregroundColor(task.isCompleted ? themeManager.successColor : .gray)
         }
         .padding()
         .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
@@ -405,7 +408,7 @@ struct EnhancedHomeTaskCard: View {
             } label: {
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundColor(task.isCompleted ? .green : themeManager.accentColor)
+                    .foregroundColor(task.isCompleted ? themeManager.successColor : themeManager.accentColor)
                     .scaleEffect(isCompleting ? 1.3 : 1.0)
                     .rotationEffect(.degrees(isCompleting ? 360 : 0))
             }

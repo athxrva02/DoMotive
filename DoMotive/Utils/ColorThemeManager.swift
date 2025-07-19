@@ -11,33 +11,22 @@ import CoreData
 class ColorThemeManager: ObservableObject {
     static let shared = ColorThemeManager()
     
-    @Published var currentTheme: AppTheme = .default
+    @Published var currentTheme: AppTheme = .unified
     @Published var currentMoodValue: Int16 = 5
     
     private init() {}
     
-    // MARK: - Theme Management
+    // MARK: - Theme Management (Simplified)
     
     func updateTheme(for moodValue: Int16) {
         currentMoodValue = moodValue
-        currentTheme = getTheme(for: moodValue)
+        // Keep mood tracking but use consistent theme
+        currentTheme = .unified
     }
     
     func getTheme(for moodValue: Int16) -> AppTheme {
-        switch moodValue {
-        case 1...2:
-            return .lowMood
-        case 3...4:
-            return .sadMood
-        case 5...6:
-            return .neutral
-        case 7...8:
-            return .goodMood
-        case 9...10:
-            return .euphoric
-        default:
-            return .default
-        }
+        // Always return unified theme regardless of mood
+        return .unified
     }
     
     // MARK: - Color Accessors
@@ -72,6 +61,24 @@ class ColorThemeManager: ObservableObject {
     
     var textSecondaryColor: Color {
         currentTheme.textSecondaryColor
+    }
+    
+    // MARK: - Semantic Colors
+    
+    var successColor: Color {
+        currentTheme.successColor
+    }
+    
+    var warningColor: Color {
+        currentTheme.warningColor
+    }
+    
+    var surfaceColor: Color {
+        currentTheme.surfaceColor
+    }
+    
+    var onSurfaceColor: Color {
+        currentTheme.onSurfaceColor
     }
     
     // MARK: - Dynamic Gradients
@@ -131,9 +138,32 @@ struct AppTheme {
     let gradientColors: [Color]
     let textPrimaryColor: Color
     let textSecondaryColor: Color
+    let successColor: Color
+    let warningColor: Color
+    let surfaceColor: Color
+    let onSurfaceColor: Color
     let name: String
     
     // MARK: - Predefined Themes
+    
+    static let unified = AppTheme(
+        primaryColor: Color(red: 0.39, green: 0.4, blue: 0.945), // #6366F1 - Soft Indigo
+        secondaryColor: Color(red: 0.925, green: 0.286, blue: 0.6), // #EC4899 - Warm Pink
+        accentColor: Color(red: 0.39, green: 0.4, blue: 0.945), // #6366F1 - Soft Indigo
+        backgroundColor: Color(.systemBackground),
+        cardBackgroundColor: Color(.systemGroupedBackground),
+        gradientColors: [
+            Color(red: 0.39, green: 0.4, blue: 0.945),
+            Color(red: 0.925, green: 0.286, blue: 0.6)
+        ],
+        textPrimaryColor: Color(.label),
+        textSecondaryColor: Color(.secondaryLabel),
+        successColor: Color(red: 0.063, green: 0.725, blue: 0.506), // #10B981 - Forest Green
+        warningColor: Color(red: 0.961, green: 0.616, blue: 0.043), // #F59E0B - Warm Amber
+        surfaceColor: Color(.secondarySystemGroupedBackground),
+        onSurfaceColor: Color(.label),
+        name: "Unified"
+    )
     
     static let `default` = AppTheme(
         primaryColor: Color(red: 0.29, green: 0.56, blue: 0.89), // #4A90E2
@@ -147,83 +177,28 @@ struct AppTheme {
         ],
         textPrimaryColor: Color(.label),
         textSecondaryColor: Color(.secondaryLabel),
+        successColor: Color(red: 0.063, green: 0.725, blue: 0.506),
+        warningColor: Color(red: 0.961, green: 0.616, blue: 0.043),
+        surfaceColor: Color(.secondarySystemGroupedBackground),
+        onSurfaceColor: Color(.label),
         name: "Default"
     )
     
+    // Note: Keeping mood-based themes for potential future use, but app will use unified theme
     static let lowMood = AppTheme(
-        primaryColor: Color(red: 0.5, green: 0.5, blue: 0.6), // Muted blue-gray
-        secondaryColor: Color(red: 0.6, green: 0.5, blue: 0.7), // Soft purple
-        accentColor: Color(red: 0.7, green: 0.6, blue: 0.8), // Light lavender
+        primaryColor: Color(red: 0.5, green: 0.5, blue: 0.6),
+        secondaryColor: Color(red: 0.6, green: 0.5, blue: 0.7),
+        accentColor: Color(red: 0.7, green: 0.6, blue: 0.8),
         backgroundColor: Color(.systemBackground),
         cardBackgroundColor: Color(.tertiarySystemBackground),
-        gradientColors: [
-            Color(red: 0.5, green: 0.5, blue: 0.6),
-            Color(red: 0.6, green: 0.5, blue: 0.7)
-        ],
+        gradientColors: [Color(red: 0.5, green: 0.5, blue: 0.6), Color(red: 0.6, green: 0.5, blue: 0.7)],
         textPrimaryColor: Color(.label),
         textSecondaryColor: Color(.secondaryLabel),
+        successColor: Color(red: 0.063, green: 0.725, blue: 0.506),
+        warningColor: Color(red: 0.961, green: 0.616, blue: 0.043),
+        surfaceColor: Color(.secondarySystemGroupedBackground),
+        onSurfaceColor: Color(.label),
         name: "Comfort"
-    )
-    
-    static let sadMood = AppTheme(
-        primaryColor: Color(red: 0.6, green: 0.6, blue: 0.7), // Soft gray
-        secondaryColor: Color(red: 0.7, green: 0.6, blue: 0.6), // Warm gray
-        accentColor: Color(red: 0.8, green: 0.7, blue: 0.6), // Beige
-        backgroundColor: Color(.systemBackground),
-        cardBackgroundColor: Color(.secondarySystemBackground),
-        gradientColors: [
-            Color(red: 0.6, green: 0.6, blue: 0.7),
-            Color(red: 0.7, green: 0.6, blue: 0.6)
-        ],
-        textPrimaryColor: Color(.label),
-        textSecondaryColor: Color(.secondaryLabel),
-        name: "Gentle"
-    )
-    
-    static let neutral = AppTheme(
-        primaryColor: Color(red: 0.29, green: 0.56, blue: 0.89), // Standard blue
-        secondaryColor: Color(red: 0.31, green: 0.78, blue: 0.47), // Standard green
-        accentColor: Color(red: 0.27, green: 0.72, blue: 0.88), // Standard accent
-        backgroundColor: Color(.systemBackground),
-        cardBackgroundColor: Color(.secondarySystemBackground),
-        gradientColors: [
-            Color(red: 0.29, green: 0.56, blue: 0.89),
-            Color(red: 0.31, green: 0.78, blue: 0.47)
-        ],
-        textPrimaryColor: Color(.label),
-        textSecondaryColor: Color(.secondaryLabel),
-        name: "Balanced"
-    )
-    
-    static let goodMood = AppTheme(
-        primaryColor: Color(red: 0.2, green: 0.7, blue: 0.4), // Vibrant green
-        secondaryColor: Color(red: 0.3, green: 0.8, blue: 0.9), // Bright cyan
-        accentColor: Color(red: 0.9, green: 0.7, blue: 0.2), // Sunny yellow
-        backgroundColor: Color(.systemBackground),
-        cardBackgroundColor: Color(.secondarySystemBackground),
-        gradientColors: [
-            Color(red: 0.2, green: 0.7, blue: 0.4),
-            Color(red: 0.3, green: 0.8, blue: 0.9)
-        ],
-        textPrimaryColor: Color(.label),
-        textSecondaryColor: Color(.secondaryLabel),
-        name: "Energetic"
-    )
-    
-    static let euphoric = AppTheme(
-        primaryColor: Color(red: 0.9, green: 0.2, blue: 0.6), // Vibrant pink
-        secondaryColor: Color(red: 0.2, green: 0.8, blue: 0.9), // Electric blue
-        accentColor: Color(red: 0.9, green: 0.6, blue: 0.1), // Golden orange
-        backgroundColor: Color(.systemBackground),
-        cardBackgroundColor: Color(.secondarySystemBackground),
-        gradientColors: [
-            Color(red: 0.9, green: 0.2, blue: 0.6),
-            Color(red: 0.2, green: 0.8, blue: 0.9),
-            Color(red: 0.9, green: 0.6, blue: 0.1)
-        ],
-        textPrimaryColor: Color(.label),
-        textSecondaryColor: Color(.secondaryLabel),
-        name: "Radiant"
     )
 }
 

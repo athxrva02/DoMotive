@@ -238,7 +238,7 @@ struct SuggestionView: View {
                         icon: "heart.circle.fill",
                         title: "Update Mood",
                         subtitle: "Log current feeling",
-                        color: .pink
+                        color: themeManager.secondaryColor
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -250,7 +250,7 @@ struct SuggestionView: View {
                         icon: "list.bullet.circle.fill",
                         title: "Browse Templates",
                         subtitle: "View all suggestions",
-                        color: .orange
+                        color: themeManager.warningColor
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -260,7 +260,7 @@ struct SuggestionView: View {
                         icon: "chart.line.uptrend.xyaxis.circle.fill",
                         title: "View Tasks",
                         subtitle: "Track progress",
-                        color: .purple
+                        color: themeManager.primaryColor
                     )
                 }
                 .buttonStyle(PlainButtonStyle())
