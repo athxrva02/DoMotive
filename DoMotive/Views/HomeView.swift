@@ -365,7 +365,7 @@ struct HomeTaskCard: View {
                     .font(.subheadline).bold()
                     .foregroundColor(.primary)
                 if let due = task.dueDate {
-                    Text(due, style: .time)
+                    Text(due.formatted(date: .abbreviated, time: .omitted))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -431,9 +431,9 @@ struct EnhancedHomeTaskCard: View {
                 HStack {
                     if let due = task.dueDate {
                         HStack(spacing: 4) {
-                            Image(systemName: "clock")
+                            Image(systemName: "calendar")
                                 .font(.caption)
-                            Text(due, style: .time)
+                            Text(due.formatted(date: .abbreviated, time: .omitted))
                                 .font(.caption)
                         }
                         .foregroundColor(.secondary)

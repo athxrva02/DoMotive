@@ -415,9 +415,9 @@ struct EnhancedTaskRow: View {
                 HStack(spacing: 8) {
                     if let due = task.dueDate {
                         HStack(spacing: 4) {
-                            Image(systemName: "clock")
+                            Image(systemName: "calendar")
                                 .font(.caption)
-                            Text(due, style: .relative)
+                            Text(due.formatted(date: .abbreviated, time: .omitted))
                                 .font(.caption)
                         }
                         .foregroundColor(isOverdue ? .red : .secondary)

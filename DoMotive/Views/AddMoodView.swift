@@ -11,6 +11,7 @@ import CoreData
 struct AddMoodView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) var presentation
+    @EnvironmentObject var themeManager: ColorThemeManager
     @StateObject private var moodManager = MoodManager.shared
 
     @State private var moodValue: Int16 = 5
@@ -41,12 +42,14 @@ struct AddMoodView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { addMood() }
                         .fontWeight(.medium)
+                        .foregroundColor(themeManager.accentColor)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { presentation.wrappedValue.dismiss() }
                 }
             }
         }
+        .moodResponsiveBackground(opacity: 0.05)
     }
 
     private func addMood() {
