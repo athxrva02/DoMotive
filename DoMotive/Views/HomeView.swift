@@ -81,20 +81,30 @@ private extension HomeView {
             }
 
             if let mood = todayMood.first {
-                VStack(alignment: .leading, spacing: 2) {
-                    // Mood Value as color/slider/emoji
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Mood: \(mood.moodValue)")
                         MoodEmojiView(value: mood.moodValue)
-                    }
-                    // Tag chips
-                    HStack {
-                        ForEach(parseTags(mood.tags), id: \.self) { t in
-                            Text(t)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(Capsule().fill(Color(.systemBlue).opacity(0.15)))
+                            .font(.title2)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(mood.moodLabel ?? "Unknown")
+                                .font(.headline)
+                                .fontWeight(.medium)
+                            Text("Level \(mood.moodValue)")
                                 .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    if !parseTags(mood.tags).isEmpty {
+                        HStack {
+                            ForEach(parseTags(mood.tags), id: \.self) { tag in
+                                Text(tag)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Capsule().fill(Color(.systemBlue).opacity(0.15)))
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
                 }
@@ -171,18 +181,12 @@ private extension HomeView {
 // MARK: - Helper Components
 
 struct MoodEmojiView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @StateObject private var moodManager = MoodManager.shared
     var value: Int16
+    
     var body: some View {
-        Text(self.emoji(for: value))
-    }
-    func emoji(for value: Int16) -> String {
-        switch value {
-        case 8...10: return "😃"
-        case 5...7: return "🙂"
-        case 3...4: return "😐"
-        case 1...2: return "😔"
-        default: return "❓"
-        }
+        Text(moodManager.getMoodEmoji(for: value, context: viewContext))
     }
 }
 
@@ -213,6 +217,3 @@ struct HomeTaskCard: View {
     }
 }
 
-func parseTags(_ str: String?) -> [String] {
-    str?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? []
-}

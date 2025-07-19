@@ -5,29 +5,42 @@
 //  Created by Atharva Dagaonkar on 18/07/25.
 //
 
-// AddMoodView.swift
 import SwiftUI
+import CoreData
 
 struct AddMoodView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) var presentation
+    @StateObject private var moodManager = MoodManager.shared
 
-    @State private var moodValue: Double = 5
+    @State private var moodValue: Int16 = 5
     @State private var tags: String = ""
 
     var body: some View {
         NavigationView {
             Form {
-                VStack {
-                    Text("Mood: \(Int(moodValue))")
-                    Slider(value: $moodValue, in: 1...10, step: 1)
+                Section {
+                    DiscreteMoodSlider(selectedValue: $moodValue)
+                        .padding(.vertical)
                 }
-                TextField("Tags (comma separated)", text: $tags)
+                
+                Section("Additional Details") {
+                    TextField("Tags (comma separated)", text: $tags)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                
+                Section {
+                    Text("Tags help categorize your mood and can be used to suggest relevant tasks.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
-            .navigationTitle("New Mood")
+            .navigationTitle("Log Your Mood")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { addMood() }
+                        .fontWeight(.medium)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { presentation.wrappedValue.dismiss() }
@@ -39,11 +52,16 @@ struct AddMoodView: View {
     private func addMood() {
         let newMood = MoodEntry(context: viewContext)
         newMood.id = UUID()
-        newMood.moodValue = Int16(moodValue)
-        newMood.tags = tags
+        newMood.moodValue = moodValue
+        newMood.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
+        newMood.tags = tags.isEmpty ? nil : tags
         newMood.date = Date()
 
-        try? viewContext.save()
-        presentation.wrappedValue.dismiss()
+        do {
+            try viewContext.save()
+            presentation.wrappedValue.dismiss()
+        } catch {
+            print("Error saving mood: \(error)")
+        }
     }
 }
