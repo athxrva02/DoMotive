@@ -20,6 +20,7 @@ struct JournalListView: View {
 
     @State private var showingAddJournal = false
     @State private var editingJournal: JournalEntry?
+    @State private var selectedJournal: JournalEntry?
     @State private var searchText = ""
     @State private var selectedFilter = "All"
     
@@ -100,6 +101,10 @@ struct JournalListView: View {
             }
             .sheet(item: $editingJournal) { journal in
                 EditJournalView(journal: journal)
+                    .environmentObject(themeManager)
+            }
+            .sheet(item: $selectedJournal) { journal in
+                JournalDetailView(journal: journal)
                     .environmentObject(themeManager)
             }
         }
@@ -219,6 +224,9 @@ struct JournalListView: View {
                     .environmentObject(themeManager)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
+                    .onTapGesture {
+                        selectedJournal = journal
+                    }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         Button {
                             editingJournal = journal
@@ -480,7 +488,7 @@ struct EditJournalView: View {
                     .font(.body)
                     .foregroundColor(themeManager.textPrimaryColor)
                     .frame(minHeight: isExpanded ? 300 : 150)
-                    .onChange(of: text) { newValue in
+                    .onChange(of: text) { _, newValue in
                         if newValue.count > characterLimit {
                             text = String(newValue.prefix(characterLimit))
                         }
@@ -658,11 +666,241 @@ struct EditJournalView: View {
         journal.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
         journal.tags = tags.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : tags
         
+        // Update corresponding mood entry
+        updateMoodEntry()
+        
         do {
             try viewContext.save()
             presentation.wrappedValue.dismiss()
         } catch {
             print("Error saving journal entry: \(error)")
         }
+    }
+    
+    private func updateMoodEntry() {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: selectedDate)
+        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+        
+        // Check if mood entry already exists for this date
+        let fetchRequest: NSFetchRequest<MoodEntry> = MoodEntry.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@", dayStart as NSDate, dayEnd as NSDate)
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            let existingMoods = try viewContext.fetch(fetchRequest)
+            
+            if let existingMood = existingMoods.first {
+                // Update existing mood entry
+                existingMood.moodValue = moodValue
+                existingMood.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
+                // Update tags if provided
+                if !tags.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    existingMood.tags = tags
+                }
+            } else {
+                // Create new mood entry if none exists
+                let newMood = MoodEntry(context: viewContext)
+                newMood.id = UUID()
+                newMood.moodValue = moodValue
+                newMood.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
+                newMood.tags = tags.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : tags
+                newMood.date = selectedDate
+            }
+        } catch {
+            print("Error updating mood entry: \(error)")
+        }
+    }
+}
+
+struct JournalDetailView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject var themeManager: ColorThemeManager
+    @StateObject private var moodManager = MoodManager.shared
+    
+    @ObservedObject var journal: JournalEntry
+    @State private var showingEditView = false
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                themeManager.backgroundGradient
+                    .opacity(0.03)
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        headerSection
+                        contentSection
+                        if let tags = journal.tags, !tags.isEmpty {
+                            tagsSection
+                        }
+                        metadataSection
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Journal Entry")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.secondary)
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Edit") {
+                        showingEditView = true
+                    }
+                    .fontWeight(.medium)
+                    .foregroundColor(themeManager.accentColor)
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditView) {
+            EditJournalView(journal: journal)
+                .environmentObject(themeManager)
+        }
+    }
+    
+    private var headerSection: some View {
+        VStack(spacing: 16) {
+            if journal.moodValue > 0 {
+                HStack(spacing: 16) {
+                    Text(moodManager.getMoodEmoji(for: journal.moodValue, context: viewContext))
+                        .font(.system(size: 50))
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(journal.moodLabel ?? moodManager.getMoodLabel(for: journal.moodValue, context: viewContext))
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(themeManager.textPrimaryColor)
+                        
+                        Text("Mood Level: \(journal.moodValue)/10")
+                            .font(.subheadline)
+                            .foregroundColor(themeManager.textSecondaryColor)
+                        
+                        HStack(spacing: 3) {
+                            ForEach(1...10, id: \.self) { level in
+                                Circle()
+                                    .fill(level <= journal.moodValue ? themeManager.accentColor : Color(.tertiarySystemFill))
+                                    .frame(width: 8, height: 8)
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(themeManager.accentColor.opacity(0.1))
+                )
+            }
+        }
+        .animatedCard()
+    }
+    
+    private var contentSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "text.quote")
+                    .foregroundColor(themeManager.accentColor)
+                Text("Entry")
+                    .font(.headline)
+                    .foregroundColor(themeManager.textPrimaryColor)
+                Spacer()
+            }
+            
+            Text(journal.text ?? "")
+                .font(.body)
+                .foregroundColor(themeManager.textPrimaryColor)
+                .lineSpacing(4)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding()
+        .animatedCard()
+    }
+    
+    private var tagsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "tag.circle.fill")
+                    .foregroundColor(themeManager.accentColor)
+                Text("Tags")
+                    .font(.headline)
+                    .foregroundColor(themeManager.textPrimaryColor)
+                Spacer()
+            }
+            
+            LazyVGrid(columns: [
+                GridItem(.adaptive(minimum: 80), spacing: 8)
+            ], spacing: 8) {
+                ForEach(parseTags(journal.tags ?? ""), id: \.self) { tag in
+                    Text(tag)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(themeManager.accentColor.opacity(0.15))
+                        )
+                        .foregroundColor(themeManager.accentColor)
+                }
+            }
+        }
+        .padding()
+        .animatedCard()
+    }
+    
+    private var metadataSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(themeManager.accentColor)
+                Text("Details")
+                    .font(.headline)
+                    .foregroundColor(themeManager.textPrimaryColor)
+                Spacer()
+            }
+            
+            VStack(spacing: 12) {
+                if let date = journal.date {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundColor(themeManager.accentColor)
+                            .frame(width: 20)
+                        Text("Written on")
+                            .font(.subheadline)
+                            .foregroundColor(themeManager.textSecondaryColor)
+                        Spacer()
+                        Text(date.formatted(date: .complete, time: .shortened))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(themeManager.textPrimaryColor)
+                    }
+                }
+                
+                if let text = journal.text {
+                    HStack {
+                        Text("Word count")
+                            .font(.subheadline)
+                            .foregroundColor(themeManager.textSecondaryColor)
+                        Spacer()
+                        Text("\(text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.count) words")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(themeManager.textPrimaryColor)
+                    }
+                }
+            }
+        }
+        .padding()
+        .animatedCard()
     }
 }

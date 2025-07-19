@@ -73,7 +73,7 @@ struct SuggestionView: View {
                 themeManager.updateTheme(for: currentMoodValue)
                 setupCardOffsets()
             }
-            .onChange(of: currentMoodValue) { newValue in
+            .onChange(of: currentMoodValue) { _, newValue in
                 themeManager.updateTheme(for: newValue)
                 loadSuggestions()
             }

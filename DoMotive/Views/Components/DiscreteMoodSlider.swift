@@ -101,7 +101,7 @@ struct DiscreteMoodSlider: View {
                     HStack {
                         Text("Emoji:")
                         TextField("Enter emoji", text: $customEmoji)
-                            .onChange(of: customEmoji) { newValue in
+                            .onChange(of: customEmoji) { _, newValue in
                                 let filtered = String(newValue.prefix(2))
                                 if filtered != newValue {
                                     customEmoji = filtered

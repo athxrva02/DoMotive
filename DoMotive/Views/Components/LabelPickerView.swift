@@ -301,7 +301,7 @@ struct CreateLabelView: View {
                     }
                     
                     TextField("Emoji", text: $emoji)
-                        .onChange(of: emoji) { newValue in
+                        .onChange(of: emoji) { _, newValue in
                             emoji = String(newValue.prefix(2))
                         }
                 }

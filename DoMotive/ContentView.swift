@@ -52,7 +52,7 @@ struct ContentView: View {
                     .tag(4)
             }
             .accentColor(themeManager.accentColor)
-            .onChange(of: selectedTab) { newValue in
+            .onChange(of: selectedTab) { _, newValue in
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     previousTab = newValue
                 }

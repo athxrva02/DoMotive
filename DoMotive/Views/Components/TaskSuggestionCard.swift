@@ -520,7 +520,6 @@ struct TaskSuggestionDetailView: View {
     }
     
     private func acceptSuggestion() {
-        let task = taskEngine.createTask(from: template, context: viewContext)
         
         do {
             try viewContext.save()

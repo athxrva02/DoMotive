@@ -66,7 +66,7 @@ struct HomeView: View {
                 updateThemeForMood()
                 loadSmartSuggestions()
             }
-            .onChange(of: todayMood.first?.moodValue) { _ in
+            .onChange(of: todayMood.first?.moodValue) {
                 updateThemeForMood()
                 loadSmartSuggestions()
             }
@@ -213,7 +213,6 @@ struct HomeView: View {
     }
     
     private func acceptSuggestion(template: TaskTemplate) {
-        let task = taskEngine.createTask(from: template, context: viewContext)
         
         do {
             try viewContext.save()

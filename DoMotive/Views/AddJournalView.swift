@@ -96,7 +96,7 @@ struct AddJournalView: View {
                     .font(.body)
                     .foregroundColor(themeManager.textPrimaryColor)
                     .frame(minHeight: isExpanded ? 300 : 150)
-                    .onChange(of: text) { newValue in
+                    .onChange(of: text) { _, newValue in
                         if newValue.count > characterLimit {
                             text = String(newValue.prefix(characterLimit))
                         }
@@ -272,6 +272,7 @@ struct AddJournalView: View {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
         
+        // Create journal entry
         let newJournal = JournalEntry(context: viewContext)
         newJournal.id = UUID()
         newJournal.text = trimmedText
@@ -279,12 +280,64 @@ struct AddJournalView: View {
         newJournal.moodValue = moodValue
         newJournal.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
         newJournal.tags = tags.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : tags
+        
+        // Create or update mood entry for the same date
+        createOrUpdateMoodEntry()
 
         do {
             try viewContext.save()
             presentation.wrappedValue.dismiss()
         } catch {
             print("Error saving journal entry: \(error)")
+        }
+    }
+    
+    private func createOrUpdateMoodEntry() {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: selectedDate)
+        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+        
+        // Check if mood entry already exists for this date
+        let fetchRequest: NSFetchRequest<MoodEntry> = MoodEntry.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@", dayStart as NSDate, dayEnd as NSDate)
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            let existingMoods = try viewContext.fetch(fetchRequest)
+            
+            if let existingMood = existingMoods.first {
+                // Update existing mood entry
+                existingMood.moodValue = moodValue
+                existingMood.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
+                // Merge tags if both exist
+                let trimmedNewTags = tags.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let existingTags = existingMood.tags, !existingTags.isEmpty, !trimmedNewTags.isEmpty {
+                    let combinedTags = Set(existingTags.components(separatedBy: ",") + trimmedNewTags.components(separatedBy: ","))
+                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                        .filter { !$0.isEmpty }
+                        .joined(separator: ", ")
+                    existingMood.tags = combinedTags
+                } else if !trimmedNewTags.isEmpty {
+                    existingMood.tags = trimmedNewTags
+                }
+            } else {
+                // Create new mood entry
+                let newMood = MoodEntry(context: viewContext)
+                newMood.id = UUID()
+                newMood.moodValue = moodValue
+                newMood.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
+                newMood.tags = tags.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : tags
+                newMood.date = selectedDate
+            }
+        } catch {
+            print("Error fetching existing mood entries: \(error)")
+            // If fetch fails, create new mood entry anyway
+            let newMood = MoodEntry(context: viewContext)
+            newMood.id = UUID()
+            newMood.moodValue = moodValue
+            newMood.moodLabel = moodManager.getMoodLabel(for: moodValue, context: viewContext)
+            newMood.tags = tags.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : tags
+            newMood.date = selectedDate
         }
     }
 }
@@ -307,7 +360,7 @@ struct MoodSelectorView: View {
                     .padding(.horizontal)
                 
                 DiscreteMoodSlider(selectedValue: $selectedMood)
-                    .onChange(of: selectedMood) { newValue in
+                    .onChange(of: selectedMood) { _, newValue in
                         themeManager.updateTheme(for: newValue)
                     }
                 
