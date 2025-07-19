@@ -11,8 +11,11 @@ import CoreData
 
 struct HomeView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject var themeManager: ColorThemeManager
+    @StateObject private var taskEngine = TaskEngine.shared
+    @StateObject private var moodManager = MoodManager.shared
 
-    // Fetch today’s mood (if any)
+    // Fetch today's mood (if any)
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \MoodEntry.date, ascending: false)],
         predicate: NSPredicate(format: "date >= %@", Calendar.current.startOfDay(for: Date()) as NSDate),
@@ -28,29 +31,29 @@ struct HomeView: View {
 
     // Local state for quick mood entry
     @State private var showMoodSheet = false
+    @State private var suggestedTasks: [TaskTemplate] = []
+    @State private var showingSuggestions = false
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     // --- App Greeting ---
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("DoMotive")
-                            .font(.largeTitle).bold()
-                        Text(Date(), style: .date)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 4)
+                    greetingSection
 
                     // --- Mood Log Section ---
                     moodSection
 
+                    // --- Smart Suggestions ---
+                    if !suggestedTasks.isEmpty {
+                        smartSuggestionsSection
+                    }
+
                     // --- Quick Actions ---
                     quickActions
 
-                    // --- Suggested Tasks For Mood ---
-                    suggestedTasksSection
+                    // --- Today's Tasks ---
+                    todaysTasksSection
 
                     Spacer()
                 }
@@ -58,6 +61,166 @@ struct HomeView: View {
                 .padding(.top, 12)
             }
             .navigationBarHidden(true)
+            .moodResponsiveBackground(opacity: 0.03)
+            .onAppear {
+                updateThemeForMood()
+                loadSmartSuggestions()
+            }
+            .onChange(of: todayMood.first?.moodValue) { _ in
+                updateThemeForMood()
+                loadSmartSuggestions()
+            }
+        }
+    }
+    
+    // MARK: - New Sections
+    
+    private var greetingSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DoMotive")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(themeManager.textPrimaryColor)
+                    
+                    Text(Date(), style: .date)
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.textSecondaryColor)
+                }
+                
+                Spacer()
+                
+                if let mood = todayMood.first {
+                    VStack {
+                        Text(moodManager.getMoodEmoji(for: mood.moodValue, context: viewContext))
+                            .font(.system(size: 32))
+                            .scaleEffect(1.2)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.6), value: mood.moodValue)
+                    }
+                }
+            }
+        }
+        .padding()
+        .animatedCard()
+    }
+    
+    private var smartSuggestionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Smart Suggestions")
+                    .font(.headline)
+                    .foregroundColor(themeManager.textPrimaryColor)
+                
+                Spacer()
+                
+                Button("See All") {
+                    showingSuggestions = true
+                }
+                .font(.caption)
+                .foregroundColor(themeManager.accentColor)
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(Array(suggestedTasks.prefix(3).enumerated()), id: \.offset) { index, template in
+                        SmallTaskSuggestionCard(
+                            template: template,
+                            moodValue: todayMood.first?.moodValue ?? 5,
+                            onAccept: {
+                                acceptSuggestion(template: template)
+                            }
+                        )
+                        .environmentObject(themeManager)
+                    }
+                }
+                .padding(.horizontal, 1)
+            }
+        }
+        .padding()
+        .animatedCard()
+        .sheet(isPresented: $showingSuggestions) {
+            SuggestionView()
+                .environmentObject(themeManager)
+        }
+    }
+    
+    private var todaysTasksSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Today's Tasks")
+                    .font(.headline)
+                    .foregroundColor(themeManager.textPrimaryColor)
+                Spacer()
+                Text("\(tasks.count) remaining")
+                    .font(.caption)
+                    .foregroundColor(themeManager.textSecondaryColor)
+            }
+            
+            if tasks.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle")
+                        .font(.system(size: 40))
+                        .foregroundColor(themeManager.accentColor.opacity(0.7))
+                    
+                    Text("All caught up! 🎉")
+                        .font(.headline)
+                        .foregroundColor(themeManager.textPrimaryColor)
+                    
+                    Text("No pending tasks for today")
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.textSecondaryColor)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                ForEach(Array(tasks.prefix(3).enumerated()), id: \.offset) { index, task in
+                    EnhancedHomeTaskCard(task: task)
+                        .environmentObject(themeManager)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * 0.1), value: tasks.count)
+                }
+                
+                if tasks.count > 3 {
+                    NavigationLink(destination: TaskListView()) {
+                        Text("View \(tasks.count - 3) more tasks →")
+                            .font(.caption)
+                            .foregroundColor(themeManager.accentColor)
+                            .padding(.vertical, 8)
+                    }
+                }
+            }
+        }
+        .padding()
+        .animatedCard()
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func updateThemeForMood() {
+        if let currentMood = todayMood.first {
+            themeManager.updateTheme(for: currentMood.moodValue)
+        }
+    }
+    
+    private func loadSmartSuggestions() {
+        let currentMoodValue = todayMood.first?.moodValue ?? 5
+        suggestedTasks = taskEngine.getSuggestedTasks(
+            for: currentMoodValue,
+            timeOfDay: .current,
+            maxSuggestions: 3,
+            context: viewContext
+        )
+    }
+    
+    private func acceptSuggestion(template: TaskTemplate) {
+        let task = taskEngine.createTask(from: template, context: viewContext)
+        
+        do {
+            try viewContext.save()
+            // Reload suggestions after accepting one
+            loadSmartSuggestions()
+        } catch {
+            print("Error creating task from suggestion: \(error)")
         }
     }
 }
@@ -214,6 +377,187 @@ struct HomeTaskCard: View {
         .padding()
         .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
         .shadow(color: .black.opacity(0.03), radius: 3, x: 0, y: 1)
+    }
+}
+
+struct EnhancedHomeTaskCard: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject var themeManager: ColorThemeManager
+    @StateObject private var labelManager = LabelManager.shared
+    @ObservedObject var task: Task
+    @State private var isCompleting = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Button {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    isCompleting = true
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    task.isCompleted.toggle()
+                    if task.isCompleted {
+                        task.completedDate = Date()
+                    }
+                    try? viewContext.save()
+                    isCompleting = false
+                }
+            } label: {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
+                    .foregroundColor(task.isCompleted ? .green : themeManager.accentColor)
+                    .scaleEffect(isCompleting ? 1.3 : 1.0)
+                    .rotationEffect(.degrees(isCompleting ? 360 : 0))
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(task.title ?? "Untitled")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundColor(themeManager.textPrimaryColor)
+                    .strikethrough(task.isCompleted)
+                
+                if let details = task.details, !details.isEmpty {
+                    Text(details)
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.textSecondaryColor)
+                        .lineLimit(1)
+                }
+                
+                HStack {
+                    if let due = task.dueDate {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.caption)
+                            Text(due, style: .time)
+                                .font(.caption)
+                        }
+                        .foregroundColor(.secondary)
+                    }
+                    
+                    if let category = task.category {
+                        Text(category)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(themeManager.accentColor.opacity(0.2)))
+                            .foregroundColor(themeManager.accentColor)
+                    }
+                    
+                    Spacer()
+                    
+                    DifficultyIndicator(difficulty: task.difficulty)
+                        .environmentObject(themeManager)
+                }
+                
+                if let labels = task.labels, !labels.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 4) {
+                            ForEach(parseTags(labels), id: \.self) { labelName in
+                                Text(labelName)
+                                    .font(.caption2)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 2)
+                                    .background(Capsule().fill(Color(.tertiarySystemFill)))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
+        .animatedCard()
+        .opacity(task.isCompleted ? 0.6 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: task.isCompleted)
+    }
+}
+
+struct SmallTaskSuggestionCard: View {
+    @EnvironmentObject var themeManager: ColorThemeManager
+    let template: TaskTemplate
+    let moodValue: Int16
+    let onAccept: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                if let category = template.category {
+                    Text(getCategoryEmoji(category))
+                        .font(.title2)
+                }
+                Spacer()
+                Text("\(template.estimatedDuration)m")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            
+            Text(template.title ?? "Untitled")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(themeManager.textPrimaryColor)
+                .lineLimit(2)
+            
+            Text(getTemplateDescription(template))
+                .font(.caption)
+                .foregroundColor(themeManager.textSecondaryColor)
+                .lineLimit(2)
+            
+            Spacer()
+            
+            Button(action: onAccept) {
+                HStack {
+                    Image(systemName: "plus")
+                        .font(.caption)
+                    Text("Add")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(themeManager.accentColor)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .frame(width: 140, height: 120)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(themeManager.cardBackgroundColor)
+                .shadow(color: themeManager.primaryColor.opacity(0.1), radius: 4, x: 0, y: 2)
+        )
+    }
+    
+    private func getCategoryEmoji(_ category: String) -> String {
+        switch category.lowercased() {
+        case "cleaning": return "🧹"
+        case "exercise": return "🏃‍♂️"
+        case "selfcare": return "🧘‍♀️"
+        case "creative": return "🎨"
+        case "admin": return "📋"
+        case "social": return "👥"
+        case "learning": return "📚"
+        case "work": return "💼"
+        default: return "📝"
+        }
+    }
+}
+
+struct DifficultyIndicator: View {
+    @EnvironmentObject var themeManager: ColorThemeManager
+    let difficulty: Int16
+    
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(1...5, id: \.self) { level in
+                Circle()
+                    .fill(level <= difficulty ? themeManager.accentColor : Color(.tertiarySystemFill))
+                    .frame(width: 4, height: 4)
+            }
+        }
     }
 }
 

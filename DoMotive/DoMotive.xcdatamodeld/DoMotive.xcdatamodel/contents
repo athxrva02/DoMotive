@@ -30,5 +30,43 @@
         <attribute name="moodTag" optional="YES" attributeType="String"/>
         <attribute name="recurrenceRule" optional="YES" attributeType="String"/>
         <attribute name="title" optional="YES" attributeType="String"/>
+        <attribute name="labels" optional="YES" attributeType="String"/>
+        <attribute name="difficulty" optional="YES" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="estimatedDuration" optional="YES" attributeType="Integer 32" defaultValueString="30" usesScalarValueType="YES"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="completedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="TaskTemplate" representedClassName="TaskTemplate" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <attribute name="taskDescription" optional="YES" attributeType="String"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="difficulty" optional="YES" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="estimatedDuration" optional="YES" attributeType="Integer 32" defaultValueString="30" usesScalarValueType="YES"/>
+        <attribute name="moodRange" optional="YES" attributeType="String"/>
+        <attribute name="defaultLabels" optional="YES" attributeType="String"/>
+        <attribute name="isBuiltIn" optional="YES" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="TaskLabel" representedClassName="TaskLabel" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="colorHex" optional="YES" attributeType="String"/>
+        <attribute name="emoji" optional="YES" attributeType="String"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="usageCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isBuiltIn" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastUsedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="TaskSuggestion" representedClassName="TaskSuggestion" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="taskTemplateId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="moodValue" optional="YES" attributeType="Integer 16" defaultValueString="5" usesScalarValueType="YES"/>
+        <attribute name="wasAccepted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="suggestedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="responseDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="timeOfDay" optional="YES" attributeType="String"/>
     </entity>
 </model>
