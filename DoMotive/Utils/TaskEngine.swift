@@ -99,7 +99,7 @@ class TaskEngine: ObservableObject {
     }
     
     private func userHistoryScore(template: TaskTemplate, moodValue: Int16, context: NSManagedObjectContext) -> Double {
-        let request: NSFetchRequest<TaskSuggestion> = TaskSuggestion.fetchRequest()
+        let request: NSFetchRequest<TaskSuggestion> = NSFetchRequest<TaskSuggestion>(entityName: "TaskSuggestion")
         request.predicate = NSPredicate(format: "taskTemplateId == %@ AND moodValue >= %d AND moodValue <= %d",
                                       template.id! as CVarArg, moodValue - 1, moodValue + 1)
         
@@ -206,7 +206,7 @@ class TaskEngine: ObservableObject {
     }
     
     func recordAcceptance(suggestionId: UUID, context: NSManagedObjectContext) {
-        let request: NSFetchRequest<TaskSuggestion> = TaskSuggestion.fetchRequest()
+        let request: NSFetchRequest<TaskSuggestion> = NSFetchRequest<TaskSuggestion>(entityName: "TaskSuggestion")
         request.predicate = NSPredicate(format: "id == %@", suggestionId as CVarArg)
         
         do {

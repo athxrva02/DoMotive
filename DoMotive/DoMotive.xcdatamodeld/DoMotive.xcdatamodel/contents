@@ -7,6 +7,9 @@
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="text" optional="YES" attributeType="String"/>
+        <attribute name="moodValue" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="moodLabel" optional="YES" attributeType="String"/>
+        <attribute name="tags" optional="YES" attributeType="String"/>
     </entity>
     <entity name="MoodEntry" representedClassName="MoodEntry" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

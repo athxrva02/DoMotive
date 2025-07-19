@@ -199,7 +199,7 @@ struct TaskSuggestionCard: View {
             
             Spacer()
             
-            swipeInstructions
+//            swipeInstructions
         }
     }
     

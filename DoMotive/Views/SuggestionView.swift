@@ -247,7 +247,7 @@ struct SuggestionView: View {
                     showingAllSuggestions = true
                 } label: {
                     QuickActionCard(
-                        icon: "template.circle.fill",
+                        icon: "list.bullet.circle.fill",
                         title: "Browse Templates",
                         subtitle: "View all suggestions",
                         color: .orange
@@ -294,7 +294,7 @@ struct SuggestionView: View {
     }
     
     private func acceptSuggestion(template: TaskTemplate) {
-        let task = taskEngine.createTask(from: template, context: viewContext)
+        let _ = taskEngine.createTask(from: template, context: viewContext)
         
         do {
             try viewContext.save()
@@ -452,7 +452,7 @@ struct TaskSuggestionRow: View {
     }
     
     private func acceptSuggestion() {
-        let task = taskEngine.createTask(from: template, context: viewContext)
+
         
         do {
             try viewContext.save()
