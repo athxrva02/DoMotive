@@ -481,53 +481,46 @@ struct SmallTaskSuggestionCard: View {
     let onAccept: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 if let category = template.category {
                     Text(getCategoryEmoji(category))
-                        .font(.title2)
+                        .font(.system(size: 28))
                 }
-                Spacer()
-                Text("\(template.estimatedDuration)m")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                
+                Text(template.title ?? "Untitled")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(themeManager.textPrimaryColor)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                
+                Text("\(template.estimatedDuration) min")
+                    .font(.caption)
+                    .foregroundColor(themeManager.textSecondaryColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(themeManager.accentColor.opacity(0.1)))
             }
             
-            Text(template.title ?? "Untitled")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(themeManager.textPrimaryColor)
-                .lineLimit(2)
-            
-            Text(getTemplateDescription(template))
-                .font(.caption)
-                .foregroundColor(themeManager.textSecondaryColor)
-                .lineLimit(2)
-            
-            Spacer()
-            
             Button(action: onAccept) {
-                HStack {
-                    Image(systemName: "plus")
-                        .font(.caption)
-                    Text("Add")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .background(themeManager.accentColor)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                Text("Add")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(themeManager.accentColor)
+                    .cornerRadius(8)
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .frame(width: 140, height: 120)
+        .frame(width: 120, height: 140)
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(themeManager.cardBackgroundColor)
-                .shadow(color: themeManager.primaryColor.opacity(0.1), radius: 4, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
         )
     }
     
@@ -535,13 +528,16 @@ struct SmallTaskSuggestionCard: View {
         switch category.lowercased() {
         case "cleaning": return "🧹"
         case "exercise": return "🏃‍♂️"
+        case "self care": return "🧘‍♀️"
         case "selfcare": return "🧘‍♀️"
         case "creative": return "🎨"
         case "admin": return "📋"
+        case "administrative": return "📋"
         case "social": return "👥"
         case "learning": return "📚"
         case "work": return "💼"
-        default: return "📝"
+        case "household": return "🏠"
+        default: return "✨"
         }
     }
 }

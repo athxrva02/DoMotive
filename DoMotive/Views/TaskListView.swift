@@ -239,6 +239,14 @@ struct TaskListView: View {
                     ForEach(completedTasks, id: \.id) { task in
                         EnhancedTaskRow(task: task, onEdit: { editingTask = task })
                             .environmentObject(themeManager)
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button {
+                                    editingTask = task
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(themeManager.accentColor)
+                            }
                     }
                     .onDelete { indexSet in
                         deleteTasks(from: completedTasks, at: indexSet)
@@ -251,6 +259,14 @@ struct TaskListView: View {
                     ForEach(filteredTasks.filter { !$0.isCompleted }, id: \.id) { task in
                         EnhancedTaskRow(task: task, onEdit: { editingTask = task })
                             .environmentObject(themeManager)
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button {
+                                    editingTask = task
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(themeManager.accentColor)
+                            }
                     }
                     .onDelete { indexSet in
                         deleteTasks(from: filteredTasks.filter { !$0.isCompleted }, at: indexSet)
@@ -263,6 +279,14 @@ struct TaskListView: View {
                     ForEach(filteredTasks.filter { $0.isCompleted }, id: \.id) { task in
                         EnhancedTaskRow(task: task, onEdit: { editingTask = task })
                             .environmentObject(themeManager)
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button {
+                                    editingTask = task
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(themeManager.accentColor)
+                            }
                     }
                     .onDelete { indexSet in
                         deleteTasks(from: filteredTasks.filter { $0.isCompleted }, at: indexSet)
@@ -440,15 +464,6 @@ struct EnhancedTaskRow: View {
                     }
                 }
             }
-            
-            Button {
-                onEdit()
-            } label: {
-                Image(systemName: "pencil.circle")
-                    .font(.title3)
-                    .foregroundColor(themeManager.accentColor.opacity(0.7))
-            }
-            .buttonStyle(PlainButtonStyle())
         }
         .padding(.vertical, 8)
         .opacity(task.isCompleted ? 0.6 : 1.0)

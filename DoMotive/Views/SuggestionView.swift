@@ -222,46 +222,46 @@ struct SuggestionView: View {
                 .font(.headline)
                 .foregroundColor(themeManager.textPrimaryColor)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
                 NavigationLink(destination: AddTaskView().environmentObject(themeManager)) {
-                    QuickActionCard(
+                    NavigableQuickActionCard(
                         icon: "plus.circle.fill",
                         title: "Create Task",
                         subtitle: "Add a new task",
                         color: themeManager.accentColor
-                    ) {}
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
                 
                 NavigationLink(destination: AddMoodView().environmentObject(themeManager)) {
-                    QuickActionCard(
+                    NavigableQuickActionCard(
                         icon: "heart.circle.fill",
                         title: "Update Mood",
                         subtitle: "Log current feeling",
                         color: .pink
-                    ) {}
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
                 
                 Button {
                     showingAllSuggestions = true
                 } label: {
-                    QuickActionCard(
+                    NavigableQuickActionCard(
                         icon: "list.bullet.circle.fill",
                         title: "Browse Templates",
                         subtitle: "View all suggestions",
                         color: .orange
-                    ) {}
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
                 
                 NavigationLink(destination: TaskListView().environmentObject(themeManager)) {
-                    QuickActionCard(
+                    NavigableQuickActionCard(
                         icon: "chart.line.uptrend.xyaxis.circle.fill",
                         title: "View Tasks",
                         subtitle: "Track progress",
                         color: .purple
-                    ) {}
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -332,28 +332,92 @@ struct QuickActionCard: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(color)
+            VStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.15))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundColor(color)
+                }
                 
-                VStack(spacing: 2) {
+                VStack(spacing: 4) {
                     Text(title)
-                        .font(.headline)
-                        .fontWeight(.medium)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
                     
                     Text(subtitle)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(12)
+            .frame(height: 120)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
+            )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct NavigableQuickActionCard: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.15))
+                    .frame(width: 50, height: 50)
+                
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(color)
+            }
+            
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 120)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator).opacity(0.5), lineWidth: 0.5)
+        )
     }
 }
 
