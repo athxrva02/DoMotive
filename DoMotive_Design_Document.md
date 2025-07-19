@@ -5,12 +5,14 @@
 DoMotive is an iOS application that combines mood tracking, task management, journaling, and daily planning features. The app uses intelligent algorithms to suggest tasks based on the user's current emotional state, creating a personalized productivity experience.
 
 **Key Features:**
-- Mood-based task suggestion engine
-- User-defined label system for task organization
-- Dynamic UI theming that responds to emotional state
-- Comprehensive task management with CRUD operations
-- Journaling and daily planning capabilities
+- Intelligent mood-based task suggestion engine with machine learning
+- User-defined label system with colors and emojis
+- Unified design system with consistent theming across all views
+- Comprehensive task management with swipe actions and enhanced UI
+- Full-featured journaling with mood integration, editing, and detailed reading
+- Enhanced mood tracking with search, filtering, and improved visualization
 - CloudKit integration for cross-device synchronization
+- iOS 17+ optimized with modern SwiftUI patterns
 
 ## Architecture Overview
 
@@ -75,6 +77,17 @@ Task ──────────┐
   - `moodValue`, `moodLabel`, `date`
   - `tags` (comma-separated emotions)
 
+#### JournalEntry
+- **Purpose**: Enhanced journaling with mood integration
+- **Key Attributes**:
+  - `text`, `date`, `moodValue`, `moodLabel`
+  - `tags` (comma-separated themes)
+
+#### CustomMoodLabel
+- **Purpose**: User-defined mood descriptors
+- **Key Attributes**:
+  - `name`, `emoji`, `moodValue`
+
 #### TaskSuggestion
 - **Purpose**: Tracks suggestion algorithm performance
 - **Key Attributes**:
@@ -126,17 +139,25 @@ func getSuggestedTasks(for moodValue: Int16,
 **Location**: `Utils/ColorThemeManager.swift`
 
 **Responsibilities:**
-- Dynamic theme adaptation based on mood
-- 5 distinct mood-based color schemes
-- UI animation coordination
-- Theme persistence
+- Unified design system with consistent theming
+- Semantic color functions for UI consistency
+- Smooth theme transitions and animations
+- Theme persistence and state management
 
-**Mood Themes:**
-- **Comfort** (1-2): Warm, soft colors for low moods
-- **Gentle** (3-4): Calm, nurturing tones
-- **Balanced** (5-6): Neutral, stable colors
-- **Energetic** (7-8): Vibrant, motivating hues
-- **Radiant** (9-10): Bright, celebratory colors
+**Unified Theme System:**
+- **Primary Colors**: Soft Indigo (#6366F1) and Warm Pink (#EC4899)
+- **Semantic Colors**: Success (Forest Green), Warning (Warm Amber)
+- **System Integration**: Proper dark mode support with system colors
+- **Accessibility**: High contrast ratios and readable color combinations
+
+### MoodManager
+**Location**: `Utils/MoodManager.swift`
+
+**Responsibilities:**
+- Mood data management and CRUD operations
+- Emoji and label mapping for mood values
+- Custom mood label handling
+- Mood history analytics
 
 ## Screen Architecture
 
@@ -168,22 +189,25 @@ func getSuggestedTasks(for moodValue: Int16,
 **Purpose**: Comprehensive task management interface
 
 **Key Features:**
-- Search and filtering capabilities
-- Empty state management
-- Swipe-to-delete functionality
-- Edit task functionality
-- Task completion animations
+- Advanced search and filtering capabilities
+- Enhanced empty state management with contextual messages
+- Swipe-to-edit and swipe-to-delete functionality
+- Modal task editing with full form validation
+- Smooth task completion animations
+- Clean date display (dates only, no time details)
 
 **Components:**
-- `EnhancedTaskRow`: Individual task display with animations
-- `EditTaskView`: Modal task editing interface
-- Filter system: All, Active, Completed, Overdue
+- `EnhancedTaskRow`: Individual task display with micro-interactions
+- `EditTaskView`: Modal task editing interface with comprehensive form
+- Filter system: All, Active, Completed, Overdue with count badges
+- Search functionality across title, description, and category
 
-**State Management:**
+**Enhanced State Management:**
 ```swift
 @State private var searchText = ""
 @State private var selectedFilter = "All"
 @State private var editingTask: Task?
+@State private var showingAddTask = false
 ```
 
 ### 3. SuggestionView
@@ -235,16 +259,32 @@ func getSuggestedTasks(for moodValue: Int16,
 - Mood history visualization
 - Integration with suggestion engine
 
-### 6. JournalView
-**File**: `Views/AddJournalView.swift` & `JournalListView.swift`
+### 6. Enhanced Journal System
+**Files**: `Views/AddJournalView.swift`, `JournalListView.swift`, `EditJournalView.swift`, `JournalDetailView.swift`
 
-**Purpose**: Text-based reflection and journaling
+**Purpose**: Comprehensive journaling with mood integration
 
-**Features:**
-- Rich text input
-- Date-based organization
-- Search functionality
-- Mood correlation display
+**Enhanced Features:**
+- **Rich Text Input**: Multi-line text editor with character limits and expandable interface
+- **Mood Integration**: Automatic mood entry creation/updates when journaling
+- **Full CRUD Operations**: Create, read, edit, and delete journal entries
+- **Detailed Reading View**: Click any journal entry to read in focused detail view
+- **Advanced Search & Filtering**: Search across text, mood labels, and tags with time-based filters
+- **Enhanced UI**: Improved card layout with better horizontal space utilization
+- **Swipe Actions**: Edit journal entries via intuitive swipe gestures
+- **Metadata Display**: Word count, mood visualization, and detailed timestamps
+
+**Key Components:**
+- `AddJournalView`: Create new entries with mood selection
+- `EditJournalView`: Full editing capability for existing entries
+- `JournalDetailView`: Focused reading experience with metadata
+- `JournalListView`: Enhanced list with search, filters, and improved cards
+- `EnhancedMoodCard`: Optimized card layout for mood history
+
+**Data Synchronization:**
+- Journal entries automatically create/update corresponding mood entries
+- Maintains data consistency between journal and mood systems
+- Smart tag merging and date-based mood entry management
 
 ## Component Library
 
@@ -399,6 +439,35 @@ func getSuggestedTasks(for moodValue: Int16,
 - Theme system integration
 - Suggestion algorithm end-to-end
 
+## Recent Major Updates (2025)
+
+### Completed Enhancements
+
+#### Journal System Overhaul
+- **Full CRUD Operations**: Complete create, read, update, delete functionality
+- **Mood Integration**: Automatic mood entry synchronization with journal entries
+- **Enhanced UI**: Redesigned cards with optimized horizontal space usage
+- **Detailed Reading**: Click-to-read functionality with focused detail views
+- **Advanced Search**: Multi-criteria filtering and search capabilities
+
+#### Task Management Improvements
+- **Swipe Actions**: Intuitive swipe-to-edit functionality across all task lists
+- **Clean Date Display**: Simplified date formatting (dates only, no time details)
+- **Enhanced Cards**: Improved visual hierarchy and information display
+- **Better UX**: Smooth animations and micro-interactions
+
+#### Design System Unification
+- **Consistent Theming**: Replaced mood-based dynamic themes with unified color scheme
+- **Semantic Colors**: Standardized color functions for UI consistency
+- **iOS 17+ Compatibility**: Updated to modern SwiftUI patterns and APIs
+- **Accessibility**: Improved contrast ratios and dark mode support
+
+#### Technical Improvements
+- **Code Modernization**: Updated deprecated onChange syntax for iOS 17+
+- **Performance Optimization**: Enhanced Core Data queries and UI rendering
+- **Error Handling**: Robust fallbacks and graceful error recovery
+- **Data Consistency**: Automatic synchronization between related entities
+
 ## Future Enhancements
 
 ### Planned Features
@@ -407,15 +476,24 @@ func getSuggestedTasks(for moodValue: Int16,
 3. **Notification System**: Smart reminders based on mood and time
 4. **Widget Support**: iOS home screen widgets for quick actions
 5. **Machine Learning**: Enhanced suggestion accuracy with on-device ML
+6. **Export Functionality**: Data export in various formats (PDF, CSV, etc.)
 
-### Technical Debt
-1. **Code Documentation**: Comprehensive inline documentation
-2. **Error Handling**: Robust error recovery mechanisms
-3. **Localization**: Multi-language support preparation
-4. **Accessibility**: VoiceOver and accessibility improvements
+### Technical Roadmap
+1. **Comprehensive Documentation**: Inline code documentation and API guides
+2. **Localization**: Multi-language support preparation
+3. **Advanced Accessibility**: Enhanced VoiceOver and accessibility features
+4. **Testing Coverage**: Expanded unit and integration test suites
+5. **Performance Monitoring**: Analytics and crash reporting integration
 
 ## Conclusion
 
-DoMotive represents a sophisticated iOS application that seamlessly blends emotional intelligence with productivity management. The architecture prioritizes user experience through responsive design, intelligent algorithms, and delightful animations while maintaining robust data management and sync capabilities.
+DoMotive represents a sophisticated iOS application that seamlessly blends emotional intelligence with productivity management. The 2025 updates have significantly enhanced the user experience through a unified design system, comprehensive journaling capabilities, and intuitive interaction patterns.
 
-The modular design allows for easy feature expansion and maintenance, while the mood-based suggestion engine provides a unique value proposition that differentiates DoMotive from traditional task management applications.
+The architecture prioritizes user experience through responsive design, intelligent algorithms, and delightful animations while maintaining robust data management and sync capabilities. Key improvements include:
+
+- **Enhanced User Experience**: Consistent theming, improved navigation, and intuitive swipe actions
+- **Comprehensive Features**: Full CRUD operations for all entities with advanced search and filtering
+- **Data Intelligence**: Automatic synchronization between journal and mood systems
+- **Modern iOS Integration**: iOS 17+ compatibility with latest SwiftUI patterns
+
+The modular design continues to allow for easy feature expansion and maintenance, while the mood-based suggestion engine and enhanced journaling system provide unique value propositions that differentiate DoMotive from traditional task management applications. The app now offers a complete emotional wellness and productivity solution that adapts to users' emotional states and daily patterns.
